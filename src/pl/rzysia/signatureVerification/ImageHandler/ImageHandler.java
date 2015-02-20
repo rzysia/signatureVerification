@@ -6,8 +6,10 @@
 package pl.rzysia.signatureVerification.ImageHandler;
 
 import java.awt.Color;
-import java.awt.Image;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +26,43 @@ public class ImageHandler {
 
     BufferedImage originImage;
     BufferedImage croppedImage;
-    Image scaledCroppedImage;
+    BufferedImage scaledCroppedImage;
 
     public ImageHandler(String imageName) throws IOException {
-        originImage = ImageIO.read(new File(imageName));
-        repaintOriginToBlackAndWhite();
+        originImage = repaintImageToBlackAndWhite(ImageIO.read(new File(imageName)));
+    }
+
+    public static BufferedImage repaintImageToBlackAndWhite(BufferedImage image) {
+        int imageWidth = image.getWidth();
+        int imageHeight = image.getHeight();
+
+        BufferedImage copyOfImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics g = copyOfImage.createGraphics();
+        g.drawImage(image, 0, 0, null);
+
+        Color c;
+
+        for (int i = 0; i < imageHeight; i++) {
+            for (int j = 0; j < imageWidth; j++) {
+                c = new Color(copyOfImage.getRGB(j, i));
+                int difference = calculateDistanceToBackground(c);
+                if (difference > 50) {
+                    copyOfImage.setRGB(j, i, Color.BLACK.getRGB());
+                } else {
+                    copyOfImage.setRGB(j, i, Color.WHITE.getRGB());
+                }
+            }
+        }
+
+        return copyOfImage;
+    }
+    
+    public int compare(ImageHandler imageToCompare){
+        return ImagePixelByPixelComparer.compare(getScaledCroppedImage(), imageToCompare.getScaledCroppedImage());
+    }
+
+    public void repaintOriginToBlackAndWhite() {
+        originImage = repaintImageToBlackAndWhite(originImage);
     }
 
     public BufferedImage getOriginImage() {
@@ -43,11 +77,32 @@ public class ImageHandler {
         return croppedImage;
     }
 
-    public Image getScaledCroppedImage() {
+    public BufferedImage getScaledCroppedImage() {
         if (scaledCroppedImage == null) {
-            scaledCroppedImage =  getCroppedImage().getScaledInstance(100, 100, Image.SCALE_AREA_AVERAGING);
+            scaledCroppedImage = getScaledImage(getCroppedImage(), 200, 100);
+            scaledCroppedImage = repaintImageToBlackAndWhite(scaledCroppedImage);
         }
         return scaledCroppedImage;
+    }
+
+    private BufferedImage getScaledImage(BufferedImage src, int w, int h) {
+        int finalw = w;
+        int finalh = h;
+        double factor = 1.0d;
+        if (src.getWidth() > src.getHeight()) {
+            factor = ((double) src.getHeight() / (double) src.getWidth());
+            finalh = (int) (finalw * factor);
+        } else {
+            factor = ((double) src.getWidth() / (double) src.getHeight());
+            finalw = (int) (finalh * factor);
+        }
+
+        BufferedImage resizedImg = new BufferedImage(finalw, finalh, BufferedImage.TRANSLUCENT);
+        Graphics2D g2 = resizedImg.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.drawImage(src, 0, 0, finalw, finalh, null);
+        g2.dispose();
+        return resizedImg;
     }
 
     public BufferedImage cropImage() {
@@ -90,33 +145,15 @@ public class ImageHandler {
         return originImage.getSubimage(mostLeft, mostTop, mostRight - mostLeft, mostBottom - mostTop);
     }
 
-    public void repaintOriginToBlackAndWhite() {
-        int imageWidth = originImage.getWidth();
-        int imageHeight = originImage.getHeight();
-        Color c;
-
-        for (int i = 0; i < imageHeight; i++) {
-            for (int j = 0; j < imageWidth; j++) {
-                c = new Color(originImage.getRGB(j, i));
-                int difference = calculateDistanceToBackground(c);
-                if (difference > 50) {
-                    originImage.setRGB(j, i, Color.BLACK.getRGB());
-                } else {
-                    originImage.setRGB(j, i, Color.WHITE.getRGB());
-                }
-            }
-        }
-    }
-
-    private int calculateDistanceToBackground(Color color) {
+    private static int calculateDistanceToBackground(Color color) {
         return calculateColorsDistance(color, BACKGROUND_COLOR);
     }
 
-    private int calculateDistanceToTextColor(Color color) {
+    private static int calculateDistanceToTextColor(Color color) {
         return calculateColorsDistance(color, TEXT_COLOR);
     }
 
-    private int calculateColorsDistance(Color c1, Color c2) {
+    private static int calculateColorsDistance(Color c1, Color c2) {
         float dx = c1.getBlue() - c2.getBlue();
         float dy = c1.getGreen() - c2.getGreen();
         float dz = c1.getRed() - c2.getRed();
