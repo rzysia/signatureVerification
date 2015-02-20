@@ -6,6 +6,7 @@
 package pl.rzysia.signatureVerification.ImageHandler;
 
 import java.awt.Color;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -18,15 +19,16 @@ import javax.imageio.ImageIO;
  */
 public class ImageHandler {
 
-    public static final Color backgroundColor = Color.WHITE;
-    public static final Color textColor = Color.BLACK;
+    public static final Color BACKGROUND_COLOR = Color.WHITE;
+    public static final Color TEXT_COLOR = Color.BLACK;
 
     BufferedImage originImage;
     BufferedImage croppedImage;
+    Image scaledCroppedImage;
 
     public ImageHandler(String imageName) throws IOException {
         originImage = ImageIO.read(new File(imageName));
-        croppedImage = null;
+        repaintOriginToBlackAndWhite();
     }
 
     public BufferedImage getOriginImage() {
@@ -39,6 +41,13 @@ public class ImageHandler {
         }
 
         return croppedImage;
+    }
+
+    public Image getScaledCroppedImage() {
+        if (scaledCroppedImage == null) {
+            scaledCroppedImage =  getCroppedImage().getScaledInstance(100, 100, Image.SCALE_AREA_AVERAGING);
+        }
+        return scaledCroppedImage;
     }
 
     public BufferedImage cropImage() {
@@ -54,27 +63,24 @@ public class ImageHandler {
             for (int j = 0; j < imageWidth; j++) {
                 c = new Color(originImage.getRGB(j, i));
                 int difference = calculateDistanceToTextColor(c);
-                if (difference < 30) {                    
-                    if(mostLeft > j){
+                if (difference < 200) {
+                    if (mostLeft > j) {
                         mostLeft = j;
                     }
-                    if(mostRight < j){
+                    if (mostRight < j) {
                         mostRight = j;
                     }
-                    if(mostTop < 0){
+                    if (mostTop < 0) {
                         mostTop = i;
                     }
-                    if(mostBottom < i){
+                    if (mostBottom < i) {
                         mostBottom = i;
                     }
-//                    System.out.print("1");
-                } else {
-//                    System.out.print("0");
+                    originImage.setRGB(j, i, Color.BLACK.getRGB());
                 }
             }
-//            System.out.println("");
         }
-        
+
         cropStart.setLocation(mostLeft, mostTop);
         cropEnd.setLocation(mostRight, mostBottom);
 
@@ -84,12 +90,30 @@ public class ImageHandler {
         return originImage.getSubimage(mostLeft, mostTop, mostRight - mostLeft, mostBottom - mostTop);
     }
 
+    public void repaintOriginToBlackAndWhite() {
+        int imageWidth = originImage.getWidth();
+        int imageHeight = originImage.getHeight();
+        Color c;
+
+        for (int i = 0; i < imageHeight; i++) {
+            for (int j = 0; j < imageWidth; j++) {
+                c = new Color(originImage.getRGB(j, i));
+                int difference = calculateDistanceToBackground(c);
+                if (difference > 50) {
+                    originImage.setRGB(j, i, Color.BLACK.getRGB());
+                } else {
+                    originImage.setRGB(j, i, Color.WHITE.getRGB());
+                }
+            }
+        }
+    }
+
     private int calculateDistanceToBackground(Color color) {
-        return calculateColorsDistance(color, backgroundColor);
+        return calculateColorsDistance(color, BACKGROUND_COLOR);
     }
 
     private int calculateDistanceToTextColor(Color color) {
-        return calculateColorsDistance(color, textColor);
+        return calculateColorsDistance(color, TEXT_COLOR);
     }
 
     private int calculateColorsDistance(Color c1, Color c2) {

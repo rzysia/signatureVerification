@@ -23,16 +23,16 @@ public class SignatureVerification extends JFrame {
         setSize(500, 500);
         setLayout(new FlowLayout());
         
-        imageHandler = new ImageHandler("src/resources/siema.png");
+        imageHandler = new ImageHandler("src/resources/siema_gray.png");
         JLabel picLabel = new JLabel(new ImageIcon(imageHandler.getOriginImage()));
         add(picLabel);
         
-        imageHandler.cropImage();
+//        imageHandler.cropImage();
         
         JLabel croppedImage = new JLabel(new ImageIcon(imageHandler.getCroppedImage()));
         add(croppedImage);
         
-        JLabel ScalledCroppedImage = new JLabel(new ImageIcon(imageHandler.getCroppedImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)));
+        JLabel ScalledCroppedImage = new JLabel(new ImageIcon(imageHandler.getScaledCroppedImage()));
         add(ScalledCroppedImage);
 
     }
