@@ -7,15 +7,24 @@ package pl.rzysia.signatureVerification.ImageHandler;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
 /**
  *
  * @author Krzysztof
  */
-public class ImagePixelByPixelComparer {
+public class ImagePixelByPixelComparer implements SignatureComparer {
 
-    public static int compare(BufferedImage pattern, BufferedImage current) {
+    private BufferedImage pattern;
+
+    public ImagePixelByPixelComparer(BufferedImage pattern) {
+        this.pattern = pattern;
+    }
+
+    public int compare(BufferedImage current) {
+
         long samePixels = 0, differentPixels = 0, allTextPixelsInPattern = 0, allWhitePixels = 0;
+
         if (pattern.getWidth() != current.getWidth() || pattern.getHeight() != current.getHeight()) {
             return 0;
         }
@@ -41,5 +50,10 @@ public class ImagePixelByPixelComparer {
         System.out.println("Białe piksele: " + allWhitePixels);
         System.out.println("Podobieństwo: " + samePixels * 100 / allTextPixelsInPattern);
         return (int) (samePixels * 100 / allTextPixelsInPattern);
+    }
+
+    @Override
+    public boolean isAccessGranted(BufferedImage current) {
+        return this.compare(current) > 90;
     }
 }

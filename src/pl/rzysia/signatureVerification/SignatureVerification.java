@@ -41,10 +41,10 @@ public class SignatureVerification extends JFrame {
         JLabel ScalledCroppedImage = new JLabel(new ImageIcon(currentHandler.getScaledCroppedImage()));
         add(ScalledCroppedImage);
         
-        int result = ImagePixelByPixelComparer.compare(originHandler.getScaledCroppedImage(),currentHandler.getScaledCroppedImage());
+        //int result = ImagePixelByPixelComparer.compare(originHandler.getScaledCroppedImage(),currentHandler.getScaledCroppedImage());
         
-        JLabel info = new JLabel("Podobieństwo: " + result + "%");
-        add(info);
+        //JLabel info = new JLabel("Podobieństwo: " + result + "%");
+        //add(info);
     }
 
     /**

@@ -13,7 +13,9 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.imageio.ImageIO;
+import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
 /**
  *
@@ -57,8 +59,19 @@ public class ImageHandler {
         return copyOfImage;
     }
     
-    public int compare(ImageHandler imageToCompare){
-        return ImagePixelByPixelComparer.compare(getScaledCroppedImage(), imageToCompare.getScaledCroppedImage());
+    public int compare(ImageHandler imageToCompare, Class method) throws Exception{
+        
+        if(method == null)
+            throw new Exception("Nie ma podanej metody sprawdzania podpisu");
+        
+        SignatureComparer comparer = null;
+        
+        if(ImagePixelByPixelComparer.class == method)
+            comparer = new ImagePixelByPixelComparer(getScaledCroppedImage());
+        else if(ImageGrayScaleComparer.class == method)
+            comparer = new ImageGrayScaleComparer(new ArrayList());
+        
+        return comparer.compare(imageToCompare.getCroppedImage());
     }
 
     public void repaintOriginToBlackAndWhite() {
