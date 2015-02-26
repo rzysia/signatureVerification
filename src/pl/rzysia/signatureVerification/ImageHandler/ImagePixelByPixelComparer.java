@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package pl.rzysia.signatureVerification.ImageHandler;
 
 import java.awt.Color;
@@ -13,7 +8,7 @@ import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
  *
  * @author Krzysztof
  */
-public class ImagePixelByPixelComparer implements SignatureComparer {
+public class ImagePixelByPixelComparer implements SignatureComparer {    
 
     private final BufferedImage pattern;
     private final int sigma;
@@ -24,7 +19,8 @@ public class ImagePixelByPixelComparer implements SignatureComparer {
     }
 
     @Override
-    public int compare(BufferedImage current) {
+    public int compare(ImageHandler image) {
+        BufferedImage current = image.getScaledCroppedImage();
 
         long samePixels = 0, differentPixels = 0, allTextPixelsInPattern = 0, allWhitePixels = 0;
 
@@ -35,7 +31,8 @@ public class ImagePixelByPixelComparer implements SignatureComparer {
 
         for (int j = 0; j < pattern.getHeight(); j++) {
             for (int i = 0; i < pattern.getWidth(); i++) {
-                if (pattern.getRGB(i, j) == Color.BLACK.getRGB()) {
+//                if (pattern.getRGB(i, j) == Color.BLACK.getRGB()) {
+                if (ImageHandler.calculateColorsDistance(new Color(pattern.getRGB(i, j)), Color.WHITE) > 50) {
                     allTextPixelsInPattern++;
 //                    if (pattern.getRGB(i, j) == current.getRGB(i, j)) {
                     if (comparePixels(current, i, j, sigma)) {
@@ -46,7 +43,6 @@ public class ImagePixelByPixelComparer implements SignatureComparer {
                 } else {
                     allWhitePixels++;
                 }
-
             }
         }
         
@@ -61,25 +57,25 @@ public class ImagePixelByPixelComparer implements SignatureComparer {
     }
 
     @Override
-    public boolean isAccessGranted(BufferedImage current) {
+    public boolean isAccessGranted(ImageHandler current) {
         return this.compare(current) > 90;
     }
 
     private boolean comparePixels(BufferedImage current, int x, int y, int sigma) {
         int patternRGB = pattern.getRGB(x, y);
-//        System.out.println("******************** " + x + ", " + y + " *****************************");
         for (int i = x - sigma; i <= x + sigma; i++) {
             for (int j = y - sigma; j <= y + sigma; j++) {
-//                System.out.println("Sprawdzam " + i + ", " + j);
                 try{
-                if(current.getRGB(i, j) == patternRGB)
+                if(areBothTextPixels(current.getRGB(i, j), patternRGB))
                     return true;
                 } catch (ArrayIndexOutOfBoundsException e){
-//                    System.out.println("out of bounds!");
                 }
             }
         }
-//        System.out.println("**********************************************************************");
         return false;
+    }
+
+    private boolean areBothTextPixels(int rgb, int patternRGB) {
+        return ImageHandler.calculateColorsDistance(new Color(rgb), new Color(patternRGB)) < 100;
     }
 }

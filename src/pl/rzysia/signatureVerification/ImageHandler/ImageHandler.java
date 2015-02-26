@@ -14,7 +14,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import javax.imageio.ImageIO;
 import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
@@ -29,25 +28,31 @@ public class ImageHandler {
     public static final int SIGMA = 0;
     public static Point scaledImageSize = new Point(200, 200);
 
-    BufferedImage originImage;
-    BufferedImage croppedImage;
-    BufferedImage scaledCroppedImage;
-    
+    private static int getColorInGrayScale(Color c) {
+        int r = c.getRed(),
+                g = c.getGreen(),
+                b = c.getBlue();
+        int average = (r + b + g) / 3;
+        return new Color(average, average, average).getRGB();
+    }
+
+    private BufferedImage originImage;
+    private BufferedImage croppedImage;
+    private BufferedImage scaledCroppedImage;
+
     int[] projectionX;
     int[] projectionY;
+    int[][] sectors;
 
     public ImageHandler(String imageName) throws IOException {
         originImage = repaintImageToBlackAndWhite(ImageIO.read(new File(imageName)));
         croppedImage = cropImage();
         scaledCroppedImage = getScaledCroppedImage();
-        
+
         countProjections();
-        
-//        System.out.println(Arrays.toString(projectionX));
-//        System.out.println(Arrays.toString(projectionY));
     }
-    
-    public static void setScaledImageSize(Point point){
+
+    public static void setScaledImageSize(Point point) {
         scaledImageSize = point;
     }
 
@@ -66,7 +71,7 @@ public class ImageHandler {
                 c = new Color(copyOfImage.getRGB(j, i));
                 int difference = calculateDistanceToBackground(c);
                 if (difference > 50) {
-                    copyOfImage.setRGB(j, i, Color.BLACK.getRGB());
+                    copyOfImage.setRGB(j, i, getColorInGrayScale(c));
                 } else {
                     copyOfImage.setRGB(j, i, Color.WHITE.getRGB());
                 }
@@ -83,26 +88,19 @@ public class ImageHandler {
         }
 
         SignatureComparer comparer = null;
-        
-        Point cropSize = getCropSize(imageToCompare);
+
+        Point cropSize;// = getCropSize(imageToCompare);
         cropSize = new Point(200, 200);
 
         if (ImagePixelByPixelComparer.class == method) {
             comparer = new ImagePixelByPixelComparer(getScaledCroppedImage(cropSize.x, cropSize.y), SIGMA);
         } else if (ImageGrayScaleComparer.class == method) {
             comparer = new ImageGrayScaleComparer(new ArrayList());
+        } else if (ImageProjectionComparer.class == method) {
+            comparer = new ImageProjectionComparer(this);
         }
-        
-        System.out.println("*********************");
-        compareProjection(imageToCompare);
-        System.out.println("*********************");
 
-
-        return comparer.compare(imageToCompare.getScaledCroppedImage(cropSize.x, cropSize.y));
-    }
-
-    public void repaintOriginToBlackAndWhite() {
-        originImage = repaintImageToBlackAndWhite(originImage);
+        return comparer.compare(imageToCompare);
     }
 
     public BufferedImage getOriginImage() {
@@ -117,7 +115,7 @@ public class ImageHandler {
         return croppedImage;
     }
 
-    public BufferedImage getScaledCroppedImage() {
+    public final BufferedImage getScaledCroppedImage() {
         return getScaledCroppedImage(scaledImageSize.x, scaledImageSize.y);
     }
 
@@ -132,7 +130,7 @@ public class ImageHandler {
     private BufferedImage getScaledImage(BufferedImage src, int w, int h) {
         int finalw = w;
         int finalh = h;
-        double factor = 1.0d;
+//        double factor = 1.0d;
 //        if (src.getWidth() > src.getHeight()) {
 //            factor = ((double) src.getHeight() / (double) src.getWidth());
 //            finalh = (int) (finalw * factor);
@@ -149,7 +147,7 @@ public class ImageHandler {
         return resizedImg;
     }
 
-    public BufferedImage cropImage() {
+    private final BufferedImage cropImage() {
         int imageWidth = originImage.getWidth();
         int imageHeight = originImage.getHeight();
         Color c;
@@ -175,16 +173,13 @@ public class ImageHandler {
                     if (mostBottom < i) {
                         mostBottom = i;
                     }
-                    originImage.setRGB(j, i, Color.BLACK.getRGB());
+                    originImage.setRGB(j, i, c.getRGB());
                 }
             }
         }
 
         cropStart.setLocation(mostLeft, mostTop);
         cropEnd.setLocation(mostRight, mostBottom);
-
-//        System.out.println(cropStart);
-//        System.out.println(cropEnd);
 
         return originImage.getSubimage(mostLeft, mostTop, mostRight - mostLeft, mostBottom - mostTop);
     }
@@ -197,7 +192,7 @@ public class ImageHandler {
         return calculateColorsDistance(color, TEXT_COLOR);
     }
 
-    private static int calculateColorsDistance(Color c1, Color c2) {
+    static int calculateColorsDistance(Color c1, Color c2) {
         float dx = c1.getBlue() - c2.getBlue();
         float dy = c1.getGreen() - c2.getGreen();
         float dz = c1.getRed() - c2.getRed();
@@ -217,7 +212,7 @@ public class ImageHandler {
     }
 
     private void countProjections() {
-        
+
         projectionX = new int[scaledImageSize.x];
         projectionY = new int[scaledImageSize.y];
         int overalBlacPixels = 0;
@@ -225,8 +220,9 @@ public class ImageHandler {
         for (int i = 0; i < scaledImageSize.x; i++) {
             int blackPixelsCount = 0;
             for (int j = 0; j < scaledImageSize.y; j++) {
-                if(scaledCroppedImage.getRGB(i, j) == Color.BLACK.getRGB())
+                if (scaledCroppedImage.getRGB(i, j) == Color.BLACK.getRGB()) {
                     blackPixelsCount++;
+                }
             }
             overalBlacPixels += blackPixelsCount;
             projectionX[i] = blackPixelsCount;
@@ -237,53 +233,12 @@ public class ImageHandler {
         for (int i = 0; i < scaledImageSize.y; i++) {
             int blackPixelsCount = 0;
             for (int j = 0; j < scaledImageSize.x; j++) {
-                if(scaledCroppedImage.getRGB(j, i) == Color.BLACK.getRGB())
+                if (scaledCroppedImage.getRGB(j, i) == Color.BLACK.getRGB()) {
                     blackPixelsCount++;
+                }
             }
             overalBlacPixels += blackPixelsCount;
             projectionY[i] = blackPixelsCount;
-        }
-        
-//        System.out.println("Czarne piksele X: " + XBlackPixels);
-//        System.out.println("Czarne piksele Y: " + overalBlacPixels);
-    }
-    
-    public void compareProjection(ImageHandler other){
-        double currBlackPixels = countPixelsFromProjection(projectionX);
-        double otherBlackPixels = countPixelsFromProjection(other.projectionX);
-        
-        double prop = currBlackPixels / otherBlackPixels;
-        
-        scaleProjections(other, prop);
-        System.out.println("PROJECTIONS X: ");
-        System.out.println(countPixelsFromProjection(projectionX));
-        System.out.println(Arrays.toString(projectionX));
-        System.out.println(countPixelsFromProjection(other.projectionX));
-        System.out.println(Arrays.toString(other.projectionX));
-        System.out.println("*******************************");
-        System.out.println("PROJECTIONS Y: ");
-        System.out.println(countPixelsFromProjection(projectionY));
-        System.out.println(Arrays.toString(projectionY));
-        System.out.println(countPixelsFromProjection(other.projectionY));
-        System.out.println(Arrays.toString(other.projectionY));
-        
-//        System.out.println(prop);
-    }
-
-    private int countPixelsFromProjection(int[] projectionX) {
-        int result = 0;
-        for(int i : projectionX){
-            result += i;
-        }
-        return result;
-    }
-
-    private void scaleProjections(ImageHandler other, double prop) {
-        for(int i = 0; i < other.projectionX.length; i++){
-            other.projectionX[i] = (int) Math.round(other.projectionX[i] * prop);
-        }
-        for(int i = 0; i < other.projectionY.length; i++){
-            other.projectionY[i] = (int) Math.round(other.projectionY[i] * prop);
         }
     }
 

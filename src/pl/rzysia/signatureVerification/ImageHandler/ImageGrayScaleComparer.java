@@ -30,7 +30,8 @@ public class ImageGrayScaleComparer implements SignatureComparer{
     }    
     
     @Override
-    public int compare(BufferedImage current) {
+    public int compare(ImageHandler image) {
+        BufferedImage current = image.getScaledCroppedImage();
         int max = 0;
         int value;
         Integer[] currAvgs = this.processSignAverages(current);
@@ -45,8 +46,8 @@ public class ImageGrayScaleComparer implements SignatureComparer{
     }
     
     @Override
-    public boolean isAccessGranted(BufferedImage current){
-        return compare(current) > this.MIN_PERCENT;
+    public boolean isAccessGranted(ImageHandler image){
+        return compare(image) > this.MIN_PERCENT;
     }
     
     private int compareSignsAverages(Integer[] curr, Integer[] org){

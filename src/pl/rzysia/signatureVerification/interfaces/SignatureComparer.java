@@ -5,13 +5,13 @@
  */
 package pl.rzysia.signatureVerification.interfaces;
 
-import java.awt.image.BufferedImage;
+import pl.rzysia.signatureVerification.ImageHandler.ImageHandler;
 
 /**
  *
  * @author comarch
  */
 public interface SignatureComparer {
-    int compare(BufferedImage current);
-    boolean isAccessGranted(BufferedImage current);
+    int compare(ImageHandler current);
+    boolean isAccessGranted(ImageHandler current);
 }
