@@ -1,6 +1,7 @@
 package pl.rzysia.signatureVerification;
 
 import java.awt.FlowLayout;
+import java.awt.Point;
 import java.io.IOException;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -25,32 +26,36 @@ public class SignatureVerification extends JFrame {
         setLayout(new FlowLayout());
     }
     
-    public void compareFiles() throws IOException{
+    public void compareFiles() throws IOException, Exception{
         
-        originHandler = new ImageHandler("src/resources/siema.png");
-        currentHandler = new ImageHandler("src/resources/siema_ruszone.png");
-        currentHandler = new ImageHandler("src/resources/siema_obrocone.png");
+        originHandler = new ImageHandler("src/resources/kb_1.png");
+        currentHandler = new ImageHandler("src/resources/kb_2.png");
+//        currentHandler = new ImageHandler("src/resources/siema_obrocone.png");
         
-//        JLabel originImage = new JLabel(new ImageIcon(originHandler.getOriginImage()));
-//        add(originImage);
+        JLabel originImage = new JLabel(new ImageIcon(originHandler.getOriginImage()));
+        add(originImage);
+        
+        Point cropSize = new Point(200, 100);
         
 //        originHandler.repaintOriginToBlackAndWhite();
-        JLabel croppedImage = new JLabel(new ImageIcon(originHandler.getScaledCroppedImage()));
+        JLabel croppedImage = new JLabel(new ImageIcon(originHandler.getScaledCroppedImage(cropSize.x,cropSize.y)));
         add(croppedImage);
         
-        JLabel ScalledCroppedImage = new JLabel(new ImageIcon(currentHandler.getScaledCroppedImage()));
+        JLabel ScalledCroppedImage = new JLabel(new ImageIcon(currentHandler.getScaledCroppedImage(cropSize.x,cropSize.y)));
         add(ScalledCroppedImage);
         
-        //int result = ImagePixelByPixelComparer.compare(originHandler.getScaledCroppedImage(),currentHandler.getScaledCroppedImage());
+        int result = originHandler.compare(currentHandler, ImagePixelByPixelComparer.class);
         
-        //JLabel info = new JLabel("Podobieństwo: " + result + "%");
-        //add(info);
+        
+        
+        JLabel info = new JLabel("Podobieństwo: " + result + "%");
+        add(info);
     }
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, Exception {
         SignatureVerification sv = new SignatureVerification();
         sv.compareFiles();
         sv.setVisible(true);

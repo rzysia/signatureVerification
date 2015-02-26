@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import javax.imageio.ImageIO;
 import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
@@ -25,13 +26,29 @@ public class ImageHandler {
 
     public static final Color BACKGROUND_COLOR = Color.WHITE;
     public static final Color TEXT_COLOR = Color.BLACK;
+    public static final int SIGMA = 0;
+    public static Point scaledImageSize = new Point(200, 200);
 
     BufferedImage originImage;
     BufferedImage croppedImage;
     BufferedImage scaledCroppedImage;
+    
+    int[] projectionX;
+    int[] projectionY;
 
     public ImageHandler(String imageName) throws IOException {
         originImage = repaintImageToBlackAndWhite(ImageIO.read(new File(imageName)));
+        croppedImage = cropImage();
+        scaledCroppedImage = getScaledCroppedImage();
+        
+        countProjections();
+        
+//        System.out.println(Arrays.toString(projectionX));
+//        System.out.println(Arrays.toString(projectionY));
+    }
+    
+    public static void setScaledImageSize(Point point){
+        scaledImageSize = point;
     }
 
     public static BufferedImage repaintImageToBlackAndWhite(BufferedImage image) {
@@ -58,20 +75,30 @@ public class ImageHandler {
 
         return copyOfImage;
     }
-    
-    public int compare(ImageHandler imageToCompare, Class method) throws Exception{
-        
-        if(method == null)
+
+    public int compare(ImageHandler imageToCompare, Class method) throws Exception {
+
+        if (method == null) {
             throw new Exception("Nie ma podanej metody sprawdzania podpisu");
-        
+        }
+
         SignatureComparer comparer = null;
         
-        if(ImagePixelByPixelComparer.class == method)
-            comparer = new ImagePixelByPixelComparer(getScaledCroppedImage());
-        else if(ImageGrayScaleComparer.class == method)
+        Point cropSize = getCropSize(imageToCompare);
+        cropSize = new Point(200, 200);
+
+        if (ImagePixelByPixelComparer.class == method) {
+            comparer = new ImagePixelByPixelComparer(getScaledCroppedImage(cropSize.x, cropSize.y), SIGMA);
+        } else if (ImageGrayScaleComparer.class == method) {
             comparer = new ImageGrayScaleComparer(new ArrayList());
+        }
         
-        return comparer.compare(imageToCompare.getCroppedImage());
+        System.out.println("*********************");
+        compareProjection(imageToCompare);
+        System.out.println("*********************");
+
+
+        return comparer.compare(imageToCompare.getScaledCroppedImage(cropSize.x, cropSize.y));
     }
 
     public void repaintOriginToBlackAndWhite() {
@@ -91,8 +118,12 @@ public class ImageHandler {
     }
 
     public BufferedImage getScaledCroppedImage() {
-        if (scaledCroppedImage == null) {
-            scaledCroppedImage = getScaledImage(getCroppedImage(), 200, 100);
+        return getScaledCroppedImage(scaledImageSize.x, scaledImageSize.y);
+    }
+
+    public BufferedImage getScaledCroppedImage(int x, int y) {
+        if (scaledCroppedImage == null || scaledCroppedImage.getWidth() != x || scaledCroppedImage.getHeight() != y) {
+            scaledCroppedImage = getScaledImage(getCroppedImage(), x, y);
             scaledCroppedImage = repaintImageToBlackAndWhite(scaledCroppedImage);
         }
         return scaledCroppedImage;
@@ -102,13 +133,13 @@ public class ImageHandler {
         int finalw = w;
         int finalh = h;
         double factor = 1.0d;
-        if (src.getWidth() > src.getHeight()) {
-            factor = ((double) src.getHeight() / (double) src.getWidth());
-            finalh = (int) (finalw * factor);
-        } else {
-            factor = ((double) src.getWidth() / (double) src.getHeight());
-            finalw = (int) (finalh * factor);
-        }
+//        if (src.getWidth() > src.getHeight()) {
+//            factor = ((double) src.getHeight() / (double) src.getWidth());
+//            finalh = (int) (finalw * factor);
+//        } else {
+//            factor = ((double) src.getWidth() / (double) src.getHeight());
+//            finalw = (int) (finalh * factor);
+//        }
 
         BufferedImage resizedImg = new BufferedImage(finalw, finalh, BufferedImage.TRANSLUCENT);
         Graphics2D g2 = resizedImg.createGraphics();
@@ -152,8 +183,8 @@ public class ImageHandler {
         cropStart.setLocation(mostLeft, mostTop);
         cropEnd.setLocation(mostRight, mostBottom);
 
-        System.out.println(cropStart);
-        System.out.println(cropEnd);
+//        System.out.println(cropStart);
+//        System.out.println(cropEnd);
 
         return originImage.getSubimage(mostLeft, mostTop, mostRight - mostLeft, mostBottom - mostTop);
     }
@@ -172,6 +203,88 @@ public class ImageHandler {
         float dz = c1.getRed() - c2.getRed();
 
         return (int) Math.round(Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+
+    private Point getCropSize(ImageHandler imageToCompare) {
+        int x = getCroppedImage().getWidth(),
+                y = getCroppedImage().getHeight();
+
+        BufferedImage bi = imageToCompare.getCroppedImage();
+        x = x > bi.getWidth() ? bi.getWidth() : x;
+        y = y > bi.getHeight() ? bi.getHeight() : y;
+
+        return new Point(x, y);
+    }
+
+    private void countProjections() {
+        
+        projectionX = new int[scaledImageSize.x];
+        projectionY = new int[scaledImageSize.y];
+        int overalBlacPixels = 0;
+        //liczmy dla x
+        for (int i = 0; i < scaledImageSize.x; i++) {
+            int blackPixelsCount = 0;
+            for (int j = 0; j < scaledImageSize.y; j++) {
+                if(scaledCroppedImage.getRGB(i, j) == Color.BLACK.getRGB())
+                    blackPixelsCount++;
+            }
+            overalBlacPixels += blackPixelsCount;
+            projectionX[i] = blackPixelsCount;
+        }
+        int XBlackPixels = overalBlacPixels;
+        overalBlacPixels = 0;
+        //liczmy dla y
+        for (int i = 0; i < scaledImageSize.y; i++) {
+            int blackPixelsCount = 0;
+            for (int j = 0; j < scaledImageSize.x; j++) {
+                if(scaledCroppedImage.getRGB(j, i) == Color.BLACK.getRGB())
+                    blackPixelsCount++;
+            }
+            overalBlacPixels += blackPixelsCount;
+            projectionY[i] = blackPixelsCount;
+        }
+        
+//        System.out.println("Czarne piksele X: " + XBlackPixels);
+//        System.out.println("Czarne piksele Y: " + overalBlacPixels);
+    }
+    
+    public void compareProjection(ImageHandler other){
+        double currBlackPixels = countPixelsFromProjection(projectionX);
+        double otherBlackPixels = countPixelsFromProjection(other.projectionX);
+        
+        double prop = currBlackPixels / otherBlackPixels;
+        
+        scaleProjections(other, prop);
+        System.out.println("PROJECTIONS X: ");
+        System.out.println(countPixelsFromProjection(projectionX));
+        System.out.println(Arrays.toString(projectionX));
+        System.out.println(countPixelsFromProjection(other.projectionX));
+        System.out.println(Arrays.toString(other.projectionX));
+        System.out.println("*******************************");
+        System.out.println("PROJECTIONS Y: ");
+        System.out.println(countPixelsFromProjection(projectionY));
+        System.out.println(Arrays.toString(projectionY));
+        System.out.println(countPixelsFromProjection(other.projectionY));
+        System.out.println(Arrays.toString(other.projectionY));
+        
+//        System.out.println(prop);
+    }
+
+    private int countPixelsFromProjection(int[] projectionX) {
+        int result = 0;
+        for(int i : projectionX){
+            result += i;
+        }
+        return result;
+    }
+
+    private void scaleProjections(ImageHandler other, double prop) {
+        for(int i = 0; i < other.projectionX.length; i++){
+            other.projectionX[i] = (int) Math.round(other.projectionX[i] * prop);
+        }
+        for(int i = 0; i < other.projectionY.length; i++){
+            other.projectionY[i] = (int) Math.round(other.projectionY[i] * prop);
+        }
     }
 
 }

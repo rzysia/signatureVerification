@@ -3,8 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/src/pl/rzysia/signatureVerification/ImageHandler/ImageHandler.java</file>
-            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/src/pl/rzysia/signatureVerification/SignatureVerification.java</file>
+            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/signatureVerification/src/pl/rzysia/signatureVerification/ImageHandler/ImageHandler.java</file>
+            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/signatureVerification/src/pl/rzysia/signatureVerification/ImageHandler/ImageGrayScaleComparer.java</file>
+            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/signatureVerification/src/pl/rzysia/signatureVerification/SignatureVerification.java</file>
+            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/signatureVerification/src/pl/rzysia/signatureVerification/ImageHandler/ImagePixelByPixelComparer.java</file>
+            <file>file:/D:/rzysia/studia/fais/biometria/weryfilkacjaPodpisu/signatureVerification/src/pl/rzysia/signatureVerification/interfaces/SignatureComparer.java</file>
         </group>
     </open-files>
 </project-private>
