@@ -23,12 +23,22 @@ public class ImageProjectionComparer implements SignatureComparer{
 
     @Override
     public int compare(ImageHandler current) {
+        int[] projOriginX = imageHandler.projectionX,
+                projOriginY = imageHandler.projectionY,
+                projCurrX = current.projectionX,
+                projCurrY = current.projectionY;
         
+        /*
+        Pomysł - porównywanie po kolei każdej pary iX[i] <> cX[i] (procentowo o ile się różnią) i pote średnia z tych procentów
+         - może co z tego będzie?
+        */
+        
+        return 0;
     }
 
     @Override
-    public boolean isAccessGranted(ImageHandler current) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean isAccessGranted(ImageHandler image) {
+        return compare(image) > image.MIN_PERCENT;
     }
 
     public void compareProjection(ImageHandler other) {

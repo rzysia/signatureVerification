@@ -25,7 +25,8 @@ public class ImageHandler {
 
     public static final Color BACKGROUND_COLOR = Color.WHITE;
     public static final Color TEXT_COLOR = Color.BLACK;
-    public static final int SIGMA = 0;
+    public static final int SIGMA = 0;    
+    final double MIN_PERCENT = 90;
     public static Point scaledImageSize = new Point(200, 200);
 
     private static int getColorInGrayScale(Color c) {
