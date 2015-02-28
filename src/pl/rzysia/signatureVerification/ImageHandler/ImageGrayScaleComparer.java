@@ -42,7 +42,7 @@ public class ImageGrayScaleComparer implements SignatureComparer{
     
     @Override
     public int compare(ImageHandler image) {
-        BufferedImage current = image.getScaledCroppedImage();
+        BufferedImage current = image.getScaledCroppedImage(sources.get(0).getWidth(),sources.get(0).getHeight());
         int max = 0;
         int value;
         Integer[] currAvgs = this.processSignAverages(current);
@@ -89,13 +89,13 @@ public class ImageGrayScaleComparer implements SignatureComparer{
     }
     
     private Integer[] processSignAverages(BufferedImage sign){
-       Integer[] avgs = new Integer[100];
+       Integer[] avgs = new Integer[sign.getWidth()/10 * sign.getHeight()/10];
        int p = 0;
        
-       BufferedImage mi = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+       BufferedImage mi = new BufferedImage(sign.getWidth(), sign.getHeight(), BufferedImage.TYPE_INT_RGB);
        
-       for(int i = 0; i < 10; i++)
-           for(int j = 0; j < 10; j++){
+       for(int i = 0; i < mi.getWidth()/10; i++)
+           for(int j = 0; j < mi.getWidth()/10; j++){
                int v = this.getImageAverage(sign.getSubimage(10 * i, 10 * j, 10, 10));
                avgs[p++] = v;
                fillSubImage(10 * i, 10 * j, v, mi);

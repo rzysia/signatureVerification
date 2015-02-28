@@ -13,8 +13,6 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -28,14 +26,14 @@ public class ImageHandler {
 
     public static final Color BACKGROUND_COLOR = Color.WHITE;
     public static final Color TEXT_COLOR = Color.BLACK;
-    public static final int SIGMA = 0;    
+    public static final int SIGMA = 2;
     final double MIN_PERCENT = 90;
     public static Point scaledImageSize = new Point(200, 200);
 
     private static int getColorInGrayScale(Color c) {
         int r = c.getRed(),
-            g = c.getGreen(),
-            b = c.getBlue();
+                g = c.getGreen(),
+                b = c.getBlue();
         int average = (r + b + g) / 3;
         return new Color(average, average, average).getRGB();
     }
@@ -44,11 +42,18 @@ public class ImageHandler {
     private BufferedImage croppedImage;
     private BufferedImage scaledCroppedImage;
 
+    public String getPath() {
+        return path;
+    }
+
+    String path;
+    
     int[] projectionX;
     int[] projectionY;
     int[][] sectors;
 
     public ImageHandler(String imageName) throws IOException {
+        path = imageName;
         originImage = repaintImageToBlackAndWhite(ImageIO.read(new File(imageName)));
         croppedImage = cropImage();
         scaledCroppedImage = getScaledCroppedImage();
@@ -84,15 +89,15 @@ public class ImageHandler {
 
         return copyOfImage;
     }
-    
+
     public int compare(ImageHandler imageToCompare, Class method) throws Exception {
         return this.compare(imageToCompare, method, null, null);
     }
 
     public int compare(
-            ImageHandler imageToCompare, 
-            Class method, 
-            JFrame window, 
+            ImageHandler imageToCompare,
+            Class method,
+            JFrame window,
             List<BufferedImage> list) throws Exception {
 
         if (method == null) {
@@ -105,11 +110,12 @@ public class ImageHandler {
         cropSize = new Point(200, 200);
 
         if (ImagePixelByPixelComparer.class == method) {
-            comparer = new ImagePixelByPixelComparer(getScaledCroppedImage(cropSize.x, cropSize.y), SIGMA);
+            comparer = new ImagePixelByPixelComparer(list, SIGMA);//getScaledCroppedImage(cropSize.x, cropSize.y)
         } else if (ImageGrayScaleComparer.class == method) {
-            comparer = new ImageGrayScaleComparer(list, window);
+//            comparer = new ImageGrayScaleComparer(list, window);
+            comparer = new ImageGrayScaleComparer(list, null);
         } else if (ImageProjectionComparer.class == method) {
-            comparer = new ImageProjectionComparer(this);
+            comparer = new ImageProjectionComparer(list);
         }
 
         return comparer.compare(imageToCompare);
@@ -200,7 +206,7 @@ public class ImageHandler {
         return calculateColorsDistance(color, BACKGROUND_COLOR);
     }
 
-    private static int calculateDistanceToTextColor(Color color) {
+    public static int calculateDistanceToTextColor(Color color) {
         return calculateColorsDistance(color, TEXT_COLOR);
     }
 
@@ -232,7 +238,8 @@ public class ImageHandler {
         for (int i = 0; i < scaledImageSize.x; i++) {
             int blackPixelsCount = 0;
             for (int j = 0; j < scaledImageSize.y; j++) {
-                if (scaledCroppedImage.getRGB(i, j) == Color.BLACK.getRGB()) {
+//                if (scaledCroppedImage.getRGB(i, j) == Color.BLACK.getRGB()) {
+                if (calculateDistanceToTextColor(new Color(scaledCroppedImage.getRGB(i, j))) < 200) {
                     blackPixelsCount++;
                 }
             }
@@ -245,7 +252,7 @@ public class ImageHandler {
         for (int i = 0; i < scaledImageSize.y; i++) {
             int blackPixelsCount = 0;
             for (int j = 0; j < scaledImageSize.x; j++) {
-                if (scaledCroppedImage.getRGB(j, i) == Color.BLACK.getRGB()) {
+                if (calculateDistanceToTextColor(new Color(scaledCroppedImage.getRGB(j, i))) < 200) {
                     blackPixelsCount++;
                 }
             }
