@@ -5,9 +5,13 @@
  */
 package pl.rzysia.signatureVerification.ImageHandler;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
 /**
@@ -18,16 +22,23 @@ public class ImageGrayScaleComparer implements SignatureComparer{
 
     private List<BufferedImage> sources;
     private List<Integer[]> signsAvgs;
-    private final double MIN_PERCENT_SUBIMAGE;
+    private final int EPSILON;
     private final double MIN_PERCENT;
-
+    private JFrame window;
+    
     public ImageGrayScaleComparer(List<BufferedImage> sources) {
         this.sources = sources;
-        this.MIN_PERCENT_SUBIMAGE = 90.;
-        this.MIN_PERCENT = 90.;
+        this.EPSILON = 20;
+        this.MIN_PERCENT = 90d;
         
         this.processSignsAverages();
-    }    
+    }
+    
+    public ImageGrayScaleComparer(List<BufferedImage> sources, JFrame window){
+        this(sources);
+        this.window = window;
+        this.processSignsAverages();
+    }
     
     @Override
     public int compare(ImageHandler image) {
@@ -41,7 +52,6 @@ public class ImageGrayScaleComparer implements SignatureComparer{
             if(max < value)
                 max = value;
         }
-        
         return max;
     }
     
@@ -55,42 +65,68 @@ public class ImageGrayScaleComparer implements SignatureComparer{
         int resultPercent = 0;
         
         for(int i = 0; i < 100; i++){
-            percent = curr[i] > org[i] ? org[i] / curr[i] : curr[i] / org[i];
-            resultPercent += percent >= MIN_PERCENT_SUBIMAGE ? 1 : 0;
+            resultPercent += compareColors(curr[i], org[i]) ? 1 : 0;
         }
             
         return resultPercent;
     }
     
-    private List<Integer[]> processSignsAverages(){    
+    private boolean compareColors(int curr, int org){
+        Color o = new Color(org);
+        Color c = new Color(curr);
+        
+        return o.getRed() - this.EPSILON < c.getRed() && c.getRed() < o.getRed() + this.EPSILON;
+    }
+    
+    private void processSignsAverages(){    
         List<Integer[]> signsAverages = new LinkedList<>();
         
         for(BufferedImage sign : this.sources){
             signsAverages.add(processSignAverages(sign));
         }
         
-        return signsAverages;
+        signsAvgs = signsAverages;
     }
     
     private Integer[] processSignAverages(BufferedImage sign){
        Integer[] avgs = new Integer[100];
        int p = 0;
        
+       BufferedImage mi = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+       
        for(int i = 0; i < 10; i++)
-           for(int j = 0; j < 10; j++)
-               avgs[p++] = this.getImageAverage(sign.getSubimage(10 * i, 10 * j, 10, 10));
+           for(int j = 0; j < 10; j++){
+               int v = this.getImageAverage(sign.getSubimage(10 * i, 10 * j, 10, 10));
+               avgs[p++] = v;
+               fillSubImage(10 * i, 10 * j, v, mi);
+           }
+       
+       if(this.window != null)
+            this.window.add(new JLabel(new ImageIcon(mi)));
        
        return avgs;
     }
     
     private int getImageAverage(BufferedImage subsign){
-        int avg = 0;
+        int avg = 0,
+            red = 0,
+            blue = 0,
+            green = 0;
         
         for(int i = 0; i < 10; i++)
-            for(int j = 0; j < 10; j++)
+            for(int j = 0; j < 10; j++){
                 avg += subsign.getRGB(i, j);
+            }
         
-        avg = avg / 100; 
-        return avg;
+        avg = avg / 100;
+        Color c = new Color(avg);
+        int av = (c.getRed() + c.getBlue() + c.getGreen()) / 3;
+        return new Color(av, av, av).getRGB();
+    }
+    
+    private void fillSubImage(int x, int y, int avg, BufferedImage im){
+        for(int i = 0; i < 10; i++)
+            for(int j = 0; j < 10; j++)
+                im.setRGB(x + i, y + j, avg);
     }
 }

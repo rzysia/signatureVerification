@@ -14,7 +14,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
 import pl.rzysia.signatureVerification.interfaces.SignatureComparer;
 
 /**
@@ -31,8 +34,8 @@ public class ImageHandler {
 
     private static int getColorInGrayScale(Color c) {
         int r = c.getRed(),
-                g = c.getGreen(),
-                b = c.getBlue();
+            g = c.getGreen(),
+            b = c.getBlue();
         int average = (r + b + g) / 3;
         return new Color(average, average, average).getRGB();
     }
@@ -81,8 +84,16 @@ public class ImageHandler {
 
         return copyOfImage;
     }
-
+    
     public int compare(ImageHandler imageToCompare, Class method) throws Exception {
+        return this.compare(imageToCompare, method, null, null);
+    }
+
+    public int compare(
+            ImageHandler imageToCompare, 
+            Class method, 
+            JFrame window, 
+            List<BufferedImage> list) throws Exception {
 
         if (method == null) {
             throw new Exception("Nie ma podanej metody sprawdzania podpisu");
@@ -96,7 +107,7 @@ public class ImageHandler {
         if (ImagePixelByPixelComparer.class == method) {
             comparer = new ImagePixelByPixelComparer(getScaledCroppedImage(cropSize.x, cropSize.y), SIGMA);
         } else if (ImageGrayScaleComparer.class == method) {
-            comparer = new ImageGrayScaleComparer(new ArrayList());
+            comparer = new ImageGrayScaleComparer(list, window);
         } else if (ImageProjectionComparer.class == method) {
             comparer = new ImageProjectionComparer(this);
         }
